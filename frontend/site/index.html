@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SheGo</title>
+    <link rel="icon" type="image/png" href="icon-shego.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            transition: background-color 0.3s, color 0.3s;
+            /* Transição suave */
+        }
+
+        .mobile-frame {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            max-width: 420px;
+            margin: 0 auto;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            background-color: #000;
+            color: white;
+            padding: 5px 16px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        .status-bar .time {
+            font-weight: bold;
+        }
+
+        .status-bar .icons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f39bbb, #f39bbb);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background-color: #f8f9fa;
+            padding-bottom: 60px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background-color: #fff;
+            color: #333;
+        }
+
+        .form-control:focus {
+            border-color: #f39bbb;
+            outline: none;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f39bbb, #f39bbb);
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: linear-gradient(135deg, #f39bbb, #f39bbb);
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #555;
+        }
+
+        .btn-secondary:active {
+            background: #e9ecef;
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-success:active {
+            background: linear-gradient(135deg, #218838, #199d75);
+            transform: scale(0.98);
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: #e9ecef;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: #f39bbb;
+            color: white;
+            font-weight: 600;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            color: #000000;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 16px;
+            font-weight: 500;
+            padding: 8px 0;
+        }
+
+        .back-button i {
+            margin-right: 5px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #f39bbb;
+            margin: 5px 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .activity-item {
+            padding: 12px;
+            border-left: 3px solid #f39bbb;
+            background: #f8f9fa;
+            margin-bottom: 8px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        .ride-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: white;
+        }
+
+        .ride-driver {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .driver-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f39bbb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .driver-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .driver-rating {
+            color: #ffc107;
+            margin-left: auto;
+            font-size: 14px;
+        }
+
+        .ride-details {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: #555;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+
+        .ride-details i {
+            margin-right: 8px;
+            color: #f39bbb;
+            font-size: 14px;
+            min-width: 16px;
+        }
+
+        .ride-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .ride-actions .btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        #map {
+            height: 200px;
+            border-radius: 8px;
+            margin: 16px 0;
+            z-index: 1;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .search-bar input {
+            flex: 1;
+        }
+
+        .search-bar .btn {
+            flex-grow: 0;
+            flex-shrink: 0;
+            width: 55px;
+        }
+
+        .welcome-message {
+            font-size: 20px;
+            margin: 16px;
+            color: #333;
+        }
+
+        .menu-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 16px;
+        }
+
+        .menu-option {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .menu-option:active {
+            transform: scale(0.97);
+        }
+
+        .menu-option i {
+            font-size: 28px;
+            color: #f39bbb;
+            margin-bottom: 8px;
+        }
+
+        .menu-option span {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-width: 420px;
+            margin: 0 auto;
+            right: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: #f39bbb;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        input[type="time"] {
+            height: 48px;
+        }
+
+        select {
+            height: 48px;
+        }
+
+        @media (max-width: 360px) {
+            .card {
+                margin: 12px;
+                padding: 12px;
+            }
+
+            .menu-option {
+                padding: 16px;
+            }
+
+            .menu-option i {
+                font-size: 24px;
+            }
+
+            .welcome-message {
+                font-size: 18px;
+            }
+        }
+
+        .section-title {
+            margin: 16px;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .credit-balance {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: #f39bbb;
+            margin: 20px 0;
+        }
+
+        .credit-actions {
+            display: flex;
+            gap: 12px;
+            margin: 20px 16px;
+        }
+
+        .credit-actions .btn {
+            flex: 1;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+        }
+
+        .transaction-amount.positive {
+            color: #28a745;
+        }
+
+        .transaction-amount.negative {
+            color: #dc3545;
+        }
+
+        .profile-header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f39bbb, #f39bbb);
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            color: #f39bbb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0 auto 10px;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .profile-email {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 0 16px 20px;
+        }
+
+        .profile-stat {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .profile-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f39bbb;
+            margin-bottom: 4px;
+        }
+
+        .profile-stat-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .profile-menu {
+            margin: 20px 16px;
+        }
+
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+        }
+
+        .profile-menu-item i {
+            margin-right: 12px;
+            color: #f39bbb;
+            font-size: 18px;
+            width: 24px;
+        }
+
+        .profile-menu-item span {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .profile-menu-item .arrow {
+            color: #6c757d;
+        }
+
+        /* INÍCIO - ESTILOS DO MODO ESCURO E INTERRUPTOR */
+
+        /* Estilos do Interruptor */
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #f39bbb;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Estilos aplicados quando o body tem a classe .dark-mode */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .mobile-frame,
+        .dark-mode .page {
+            background-color: #1c1c1e;
+        }
+
+        .dark-mode .card,
+        .dark-mode .menu-option,
+        .dark-mode .profile-menu-item,
+        .dark-mode .profile-stat,
+        .dark-mode .ride-card {
+            background-color: #2c2c2e;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-mode .form-group label {
+            color: #b0b0b0;
+        }
+
+        .dark-mode h1,
+        .dark-mode h2,
+        .dark-mode h3 {
+            color: #f5f5f5;
+        }
+
+        .dark-mode .form-control {
+            background-color: #3a3a3c;
+            border-color: #545458;
+            color: #f5f5f5;
+        }
+
+        .dark-mode .form-control::placeholder {
+            color: #8e8e93;
+        }
+
+        .dark-mode .btn-secondary {
+            background: #3a3a3c;
+            color: #f5f5f5;
+        }
+
+        .dark-mode .back-button {
+            color: #f5f5f5;
+        }
+
+        .dark-mode .tab {
+            background: #3a3a3c;
+            color: #b0b0b0;
+        }
+
+        .dark-mode .tab.active {
+            background: #f39bbb;
+            color: white;
+        }
+
+        .dark-mode .stat-card {
+            background: #2c2c2e;
+        }
+
+        .dark-mode .activity-item {
+            background: #2c2c2e;
+        }
+
+        .dark-mode .bottom-nav {
+            background: #2c2c2e;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .nav-item {
+            color: #8e8e93;
+        }
+
+        .dark-mode .nav-item.active {
+            color: #f39bbb;
+        }
+
+        .dark-mode .transaction-item {
+            border-bottom: 1px solid #3a3a3c;
+        }
+
+        .dark-mode #map {
+            /* Filtro para inverter as cores do mapa */
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        .dark-mode .leaflet-popup-content-wrapper,
+        .dark-mode .leaflet-popup-tip {
+            background: #f8f9fa;
+            /* Cor de fundo para os popups do mapa */
+            color: #333;
+        }
+
+
+        /* FIM - ESTILOS DO MODO ESCURO */
+    </style>
+</head>
+
+<body>
+    <div class="mobile-frame">
+        <div class="status-bar">
+            <div class="time">19:30</div>
+            <div class="icons">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-three-quarters"></i>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="logo"><img src="shego-logo.png" alt="SheGo Logo"></div>
+            <div class="subtitle">Conectando universitárias com segurança</div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="page active" id="login-page">
+                <div class="card">
+                    <div class="tab-container">
+                        <div class="tab active" id="login-tab">Login</div>
+                        <div class="tab" id="register-tab">Cadastro</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">E-mail Institucional</label>
+                        <input type="email" id="email" class="form-control" placeholder="seu.email@facens.br">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" class="form-control" placeholder="Sua senha">
+                    </div>
+
+                    <button class="btn btn-primary" id="login-btn">Entrar</button>
+                </div>
+            </div>
+
+            <div class="page" id="register-page">
+                <button class="back-button" id="back-to-login">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </button>
+
+                <div class="card">
+                    <h2 style="margin-bottom: 16px; text-align: center;">Criar Conta</h2>
+                    <div class="form-group">
+                        <label for="register-name">Nome Completo</label>
+                        <input type="text" id="register-name" class="form-control" placeholder="Seu nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">E-mail Institucional</label>
+                        <input type="email" id="register-email" class="form-control" placeholder="seu.email@facens.br">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Senha</label>
+                        <input type="password" id="register-password" class="form-control"
+                            placeholder="Crie uma senha segura">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm-password">Confirmar Senha</label>
+                        <input type="password" id="register-confirm-password" class="form-control"
+                            placeholder="Digite novamente sua senha">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-id">Foto da Carteirinha de Estudante</label>
+                        <input type="file" id="register-id" class="form-control">
+                        <small style="color: #6c757d; display: block; margin-top: 5px;">Para verificação de que você
+                            é estudante da FACENS</small>
+                    </div>
+                    <button class="btn btn-success">Criar Conta</button>
+                </div>
+            </div>
+
+            <div class="page" id="main-page">
+                <button class="back-button" id="back-to-login-from-main">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+                <h1 class="welcome-message" id="welcome-message">Olá, Maria!</h1>
+                <div class="menu-options">
+                    <div class="menu-option" id="offer-ride-btn">
+                        <i class="fas fa-car-side"></i>
+                        <span>Oferecer Carona</span>
+                    </div>
+                    <div class="menu-option" id="find-ride-btn">
+                        <i class="fas fa-search-location"></i>
+                        <span>Buscar Carona</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 style="margin-bottom: 12px;">Minhas Estatísticas</h2>
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Caronas Oferecidas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">8</div>
+                            <div class="stat-label">Caronas Utilizadas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">145</div>
+                            <div class="stat-label">Créditos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">42</div>
+                            <div class="stat-label">Mulheres Conectadas</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 style="margin-bottom: 12px;">Atividade Recente</h2>
+                    <div class="activity-item">
+                        <div class="activity-title">Você ofereceu uma carona para Sorocaba</div>
+                        <div class="activity-time">Há 2 horas</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-title">Ana aceitou sua carona para Iperó</div>
+                        <div class="activity-time">Hoje cedo</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-title">Você acumulou 15 créditos</div>
+                        <div class="activity-time">Ontem</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-title">Nova passageira confirmada: Juliana</div>
+                        <div class="activity-time">Há 3 dias</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-title">Você recebeu uma avaliação 5 estrelas</div>
+                        <div class="activity-time">Há 4 dias</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="offer-ride-page">
+                <button class="back-button" id="back-to-main-from-offer">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </button>
+                <div class="card">
+                    <h2 style="margin-bottom: 16px; text-align: center;">Oferecer Carona</h2>
+                    <div class="form-group">
+                        <label for="car-model">Modelo do Carro</label>
+                        <input type="text" id="car-model" class="form-control" placeholder="Ex: Fiat Argo">
+                    </div>
+                    <div class="form-group">
+                        <label for="car-color">Cor do Carro</label>
+                        <input type="text" id="car-color" class="form-control" placeholder="Ex: Prata">
+                    </div>
+                    <div class="form-group">
+                        <label for="car-plate">Placa do Carro</label>
+                        <input type="text" id="car-plate" class="form-control" placeholder="Ex: ABC1D23">
+                    </div>
+                    <div class="form-group">
+                        <label for="from-location">Local de Partida</label>
+                        <input type="text" id="from-location" class="form-control" placeholder="De onde você vai sair?">
+                    </div>
+                    <div class="form-group">
+                        <label for="to-location">Destino</label>
+                        <input type="text" id="to-location" class="form-control" placeholder="Para onde você vai?">
+                    </div>
+                    <div class="form-group">
+                        <label for="departure-time">Horário de Saída</label>
+                        <input type="time" id="departure-time" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="available-seats">Vagas Disponíveis</label>
+                        <select id="available-seats" class="form-control">
+                            <option value="1">1 passageira</option>
+                            <option value="2">2 passageiras</option>
+                            <option value="3">3 passageiras</option>
+                            <option value="4">4 passageiras</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success">Oferecer Carona</button>
+                </div>
+            </div>
+
+            <div class="page" id="find-ride-page">
+                <button class="back-button" id="back-to-main-from-find">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </button>
+                <div class="card">
+                    <h2 style="margin-bottom: 16px; text-align: center;">Buscar Carona</h2>
+                    <div class="search-bar">
+                        <input type="text" id="search-input" class="form-control"
+                            placeholder="Buscar por cidade de partida...">
+                        <button class="btn btn-primary" id="search-button"><i class="fas fa-search"></i></button>
+                    </div>
+
+                    <div id="map"></div>
+
+                    <h3 style="margin: 16px 0 12px;">Caronas Disponíveis</h3>
+                    <div class="ride-card">
+                        <div class="ride-driver">
+                            <div class="driver-avatar">A</div>
+                            <div class="driver-name">Ana Silva</div>
+                            <div class="driver-rating"><i class="fas fa-star"></i> 4.9</div>
+                        </div>
+                        <div class="ride-details"><i class="fas fa-map-marker-alt"></i><span>Sorocaba → FACENS</span>
+                        </div>
+                        <div class="ride-details"><i class="far fa-clock"></i><span>Saída: 07:30</span></div>
+                        <div class="ride-details"><i class="fas fa-users"></i><span>2 vagas disponíveis</span></div>
+                        <div class="ride-actions">
+                            <button class="btn btn-secondary"><i class="fab fa-whatsapp"></i> Contato</button>
+                            <button class="btn btn-primary">Solicitar</button>
+                        </div>
+                    </div>
+                    <div class="ride-card">
+                        <div class="ride-driver">
+                            <div class="driver-avatar">C</div>
+                            <div class="driver-name">Carla Santos</div>
+                            <div class="driver-rating"><i class="fas fa-star"></i> 4.8</div>
+                        </div>
+                        <div class="ride-details"><i class="fas fa-map-marker-alt"></i><span>Votorantim → FACENS</span>
+                        </div>
+                        <div class="ride-details"><i class="far fa-clock"></i><span>Saída: 08:15</span></div>
+                        <div class="ride-details"><i class="fas fa-users"></i><span>1 vaga disponível</span></div>
+                        <div class="ride-actions">
+                            <button class="btn btn-secondary"><i class="fab fa-whatsapp"></i> Contato</button>
+                            <button class="btn btn-primary">Solicitar</button>
+                        </div>
+                    </div>
+                    <div class="ride-card">
+                        <div class="ride-driver">
+                            <div class="driver-avatar">M</div>
+                            <div class="driver-name">Mariana Oliveira</div>
+                            <div class="driver-rating"><i class="fas fa-star"></i> 4.7</div>
+                        </div>
+                        <div class="ride-details"><i class="fas fa-map-marker-alt"></i><span>Itu → FACENS</span></div>
+                        <div class="ride-details"><i class="far fa-clock"></i><span>Saída: 07:45</span></div>
+                        <div class="ride-details"><i class="fas fa-users"></i><span>3 vagas disponíveis</span></div>
+                        <div class="ride-actions">
+                            <button class="btn btn-secondary"><i class="fab fa-whatsapp"></i> Contato</button>
+                            <button class="btn btn-primary">Solicitar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="credits-page">
+                <h2 class="section-title">Meus Créditos</h2>
+                <div class="credit-balance">145</div>
+                <div style="text-align: center; color: #6c757d; margin-bottom: 20px;">créditos disponíveis</div>
+                <div class="credit-actions">
+                    <button class="btn btn-primary"><i class="fas fa-plus-circle"></i> Adquirir</button>
+                    <button class="btn btn-secondary"><i class="fas fa-exchange-alt"></i> Transferir</button>
+                </div>
+                <div class="card">
+                    <h2 style="margin-bottom: 12px;">Histórico de Transações</h2>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-title">Carona para Ana</div>
+                            <div class="transaction-date">20/03/2023 - 08:15</div>
+                        </div>
+                        <div class="transaction-amount positive">+15</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-title">Carona com Carla</div>
+                            <div class="transaction-date">19/03/2023 - 17:30</div>
+                        </div>
+                        <div class="transaction-amount negative">-10</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-title">Carona para Juliana</div>
+                            <div class="transaction-date">18/03/2023 - 09:45</div>
+                        </div>
+                        <div class="transaction-amount positive">+12</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-title">Carona com Mariana</div>
+                            <div class="transaction-date">17/03/2023 - 16:20</div>
+                        </div>
+                        <div class="transaction-amount negative">-8</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-title">Bônus de fidelidade</div>
+                            <div class="transaction-date">16/03/2023 - 10:00</div>
+                        </div>
+                        <div class="transaction-amount positive">+20</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="profile-page">
+                <div class="profile-header">
+                    <div class="profile-avatar">M</div>
+                    <div class="profile-name">Maria Silva</div>
+                    <div class="profile-email">maria.silva@facens.br</div>
+                </div>
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">4.8</div>
+                        <div class="profile-stat-label">Avaliação</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">20</div>
+                        <div class="profile-stat-label">Caronas</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value">145</div>
+                        <div class="profile-stat-label">Créditos</div>
+                    </div>
+                </div>
+                <div class="profile-menu">
+                    <div class="profile-menu-item" id="edit-profile-btn"><i class="fas fa-user"></i><span>Editar
+                            Perfil</span><i class="fas fa-chevron-right arrow"></i></div>
+                    <div class="profile-menu-item" id="my-vehicles-btn"><i class="fas fa-car"></i><span>Meus
+                            Veículos</span><i class="fas fa-chevron-right arrow"></i></div>
+                    <div class="profile-menu-item" id="privacy-btn"><i class="fas fa-shield-alt"></i><span>Privacidade e
+                            Segurança</span><i class="fas fa-chevron-right arrow"></i></div>
+                    <div class="profile-menu-item" id="help-btn"><i class="fas fa-question-circle"></i><span>Ajuda e
+                            Suporte</span><i class="fas fa-chevron-right arrow"></i></div>
+                    <div class="profile-menu-item" id="settings-btn"><i
+                            class="fas fa-cog"></i><span>Configurações</span><i class="fas fa-chevron-right arrow"></i>
+                    </div>
+                    <div class="profile-menu-item" id="logout-btn"><i
+                            class="fas fa-sign-out-alt"></i><span>Sair</span><i class="fas fa-chevron-right arrow"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="settings-page">
+                <button class="back-button" id="back-to-profile-from-settings">
+                    <i class="fas fa-arrow-left"></i> Voltar para o Perfil
+                </button>
+                <div class="card">
+                    <h2 style="margin-bottom: 16px;">Configurações</h2>
+                    <div class="settings-item">
+                        <span>Modo Escuro</span>
+                        <label class="switch">
+                            <input type="checkbox" id="dark-mode-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    </div>
+            </div>
+            </div>
+
+        <div class="bottom-nav" id="bottom-nav" style="display: none;">
+            <div class="nav-item active" data-page="main-page"><i class="fas fa-home"></i><span>Início</span></div>
+            <div class="nav-item" data-page="find-ride-page"><i class="fas fa-car"></i><span>Caronas</span></div>
+            <div class="nav-item" data-page="credits-page"><i class="fas fa-credit-card"></i><span>Créditos</span></div>
+            <div class="nav-item" data-page="profile-page"><i class="fas fa-user"></i><span>Perfil</span></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Constantes de páginas existentes
+            const loginPage = document.getElementById('login-page');
+            const registerPage = document.getElementById('register-page');
+            const mainPage = document.getElementById('main-page');
+            const offerRidePage = document.getElementById('offer-ride-page');
+            const findRidePage = document.getElementById('find-ride-page');
+            const creditsPage = document.getElementById('credits-page');
+            const profilePage = document.getElementById('profile-page');
+            const bottomNav = document.getElementById('bottom-nav');
+
+            // --- INÍCIO: NOVAS CONSTANTES PARA CONFIGURAÇÕES E MODO ESCURO ---
+            const settingsPage = document.getElementById('settings-page');
+            const settingsBtn = document.getElementById('settings-btn');
+            const backToProfileFromSettingsBtn = document.getElementById('back-to-profile-from-settings');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            // --- FIM: NOVAS CONSTANTES ---
+
+            const navItems = document.querySelectorAll('.nav-item');
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const backToLoginBtn = document.getElementById('back-to-login');
+            const backToLoginFromMainBtn = document.getElementById('back-to-login-from-main');
+            const backToMainFromOfferBtn = document.getElementById('back-to-main-from-offer');
+            const backToMainFromFindBtn = document.getElementById('back-to-main-from-find');
+            const loginBtn = document.getElementById('login-btn');
+            const offerRideBtn = document.getElementById('offer-ride-btn');
+            const findRideBtn = document.getElementById('find-ride-btn');
+            const editProfileBtn = document.getElementById('edit-profile-btn');
+            const myVehiclesBtn = document.getElementById('my-vehicles-btn');
+            const privacyBtn = document.getElementById('privacy-btn');
+            const helpBtn = document.getElementById('help-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+
+
+            let map = null;
+            let mapInitialized = false;
+
+            function initializeMap() {
+                if (mapInitialized) return;
+                mapInitialized = true;
+                const sorocabaCoords = [-23.5016, -47.4580];
+                map = L.map('map').setView(sorocabaCoords, 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                const drivers = [
+                    {
+                        location: [-23.5016, -47.4580],
+                        name: 'Ana Silva',
+                        seats: 2,
+                        destination: 'Sorocaba → FACENS',
+                        departureTime: '07:30'
+                    },
+                    {
+                        location: [-23.4995, -47.4620],
+                        name: 'Carla Santos',
+                        seats: 1,
+                        destination: 'Votorantim → FACENS',
+                        departureTime: '08:15'
+                    },
+                    {
+                        location: [-23.5040, -47.4555],
+                        name: 'Mariana Oliveira',
+                        seats: 3,
+                        destination: 'Itu → FACENS',
+                        departureTime: '07:45'
+                    },
+                    {
+                        location: [-23.4980, -47.4500],
+                        name: 'Juliana Lima',
+                        seats: 4,
+                        destination: 'Salto de Pirapora → FACENS',
+                        departureTime: '07:00'
+                    }
+                ];
+                drivers.forEach(driver => {
+                    const popupContent = `
+                        <b>Motorista:</b> ${driver.name}<br>
+                        <b>Vagas:</b> ${driver.seats}<br>
+                        <b>Destino:</b> ${driver.destination}<br>
+                        <b>Saída:</b> ${driver.departureTime}
+                    `;
+                    L.marker(driver.location).addTo(map)
+                        .bindPopup(popupContent);
+                });
+            }
+
+            function showPage(page) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                page.classList.add('active');
+
+                const isMainSectionPage = [mainPage, findRidePage, creditsPage, profilePage].includes(page);
+                bottomNav.style.display = isMainSectionPage ? 'flex' : 'none';
+
+                if (isMainSectionPage) {
+                    navItems.forEach(item => {
+                        item.classList.toggle('active', item.getAttribute('data-page') === page.id);
+                    });
+                }
+
+                if (page.id === 'find-ride-page' && !mapInitialized) {
+                    setTimeout(initializeMap, 100);
+                }
+                page.scrollTo(0, 0);
+            }
+
+            function capitalizeName(name) {
+                return name.split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            }
+
+            loginTab.addEventListener('click', () => { showPage(loginPage); loginTab.classList.add('active'); registerTab.classList.remove('active'); });
+            registerTab.addEventListener('click', () => { showPage(registerPage); registerTab.classList.add('active'); loginTab.classList.remove('active'); });
+            backToLoginBtn.addEventListener('click', () => { showPage(loginPage); loginTab.classList.add('active'); registerTab.classList.remove('active'); });
+
+            loginBtn.addEventListener('click', () => {
+                const email = document.getElementById('email').value;
+                if (email.endsWith('@facens.br')) {
+                    const welcomeMessage = document.getElementById('welcome-message');
+                    const namePart = email.split('@')[0];
+                    const nameWithSpaces = namePart.replace(/\./g, ' ');
+                    const formattedName = capitalizeName(nameWithSpaces);
+                    welcomeMessage.textContent = 'Olá, ' + formattedName + '!';
+                    showPage(mainPage);
+                } else {
+                    alert('Por favor, use um e-mail institucional da FACENS (xxx@facens.br)');
+                }
+            });
+
+            backToLoginFromMainBtn.addEventListener('click', () => showPage(loginPage));
+            offerRideBtn.addEventListener('click', () => showPage(offerRidePage));
+            findRideBtn.addEventListener('click', () => showPage(findRidePage));
+            backToMainFromOfferBtn.addEventListener('click', () => showPage(mainPage));
+            backToMainFromFindBtn.addEventListener('click', () => showPage(mainPage));
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    const pageId = this.getAttribute('data-page');
+                    const targetPage = document.getElementById(pageId);
+                    showPage(targetPage);
+                });
+            });
+
+            const showDevelopmentAlert = () => alert('Página em desenvolvimento.');
+            editProfileBtn.addEventListener('click', showDevelopmentAlert);
+            myVehiclesBtn.addEventListener('click', showDevelopmentAlert);
+            privacyBtn.addEventListener('click', showDevelopmentAlert);
+            helpBtn.addEventListener('click', showDevelopmentAlert);
+            logoutBtn.addEventListener('click', () => showPage(loginPage));
+
+            // --- INÍCIO: LÓGICA DO MODO ESCURO E NAVEGAÇÃO PARA CONFIGURAÇÕES ---
+
+            // Navega para a página de configurações
+            settingsBtn.addEventListener('click', () => showPage(settingsPage));
+
+            // Volta da página de configurações para o perfil
+            backToProfileFromSettingsBtn.addEventListener('click', () => showPage(profilePage));
+
+            // Função para ativar/desativar o modo escuro
+            const setDarkMode = (isDark) => {
+                if (isDark) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('theme', 'light');
+                }
+                darkModeToggle.checked = isDark;
+            };
+
+            // Event listener para o interruptor
+            darkModeToggle.addEventListener('change', () => {
+                setDarkMode(darkModeToggle.checked);
+            });
+
+            // Verifica o tema salvo no localStorage ao carregar a página
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                setDarkMode(true);
+            } else {
+                setDarkMode(false);
+            }
+
+            // --- FIM: LÓGICA DO MODO ESCURO ---
+
+
+            const emailInput = document.getElementById('email');
+            emailInput.addEventListener('blur', () => {
+                if (emailInput.value && !emailInput.value.endsWith('@facens.br')) {
+                    alert('Por favor, use um e-mail institucional da FACENS (xxx@facens.br)');
+                }
+            });
+
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const rideCards = findRidePage.querySelectorAll('.ride-card');
+
+            function filterRides() {
+                const searchTerm = searchInput.value.toLowerCase();
+                rideCards.forEach(card => {
+                    const routeTextElement = card.querySelector('.ride-details span');
+                    if (routeTextElement) {
+                        const routeText = routeTextElement.textContent.toLowerCase();
+                        if (routeText.includes(searchTerm)) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            searchInput.addEventListener('keyup', filterRides);
+            searchButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                filterRides();
+            });
+
+            document.addEventListener('touchstart', (event) => { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', (event) => {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) event.preventDefault();
+                lastTouchEnd = now;
+            }, false);
+
+            const clockElement = document.querySelector('.status-bar .time');
+
+            function updateClock() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                clockElement.textContent = `${hours}:${minutes}`;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+        });
+    </script>
+</body>
+
+</html>
